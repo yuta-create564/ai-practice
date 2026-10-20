@@ -3,398 +3,427 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>英語暗記帳</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--PWA-HEAD-->
+<meta name="description" content="自分専用の英単語・英文の暗記アプリ">
+<meta name="theme-color" content="#f3f4f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161d" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#2f6fed">
-<title>センテンス暗記</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="英語暗記帳">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<!--/PWA-HEAD-->
 <style>
+  /* 画面下にタブ、上から順に「操作するもの」を並べる片手操作向けレイアウト */
   :root {
-    --bg: #f5f6fa;
-    --card: #ffffff;
-    --text: #1d2330;
-    --sub: #6b7385;
-    --accent: #2f6fed;
-    --accent-weak: #e6eefe;
-    --border: #e1e4ec;
-    --danger: #d64545;
+    --bg: #f3f4f8;
+    --surface: #ffffff;
+    --surface-2: #eceef4;
+    --text: #1b2030;
+    --sub: #5f6779;
+    --line: #dde0e9;
+    --accent: #2b5fd9;
+    --accent-ink: #ffffff;
+    --accent-soft: #e3eafb;
+    --good: #1f8a5b;
+    --good-soft: #def3e9;
+    --warn: #a86400;
+    --warn-soft: #fdf0d9;
+    --bad: #c2393a;
+    --bad-soft: #fbe3e3;
+    --word: #7a4fd0;
+    --word-soft: #eee7fb;
+    --font: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
+    --font-en: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #14161c;
-      --card: #1e2129;
-      --text: #eceef3;
-      --sub: #9aa1b2;
-      --accent: #6b9bff;
-      --accent-weak: #253150;
-      --border: #2e323d;
-      --danger: #ff6b6b;
+      --bg: #14161d; --surface: #1d2029; --surface-2: #262a35; --text: #eceef4; --sub: #a0a7b8;
+      --line: #313644; --accent: #7aa2ff; --accent-ink: #0d1530; --accent-soft: #24304f;
+      --good: #4cc790; --good-soft: #193a2c; --warn: #f0b04a; --warn-soft: #3b2e17;
+      --bad: #ff7b7b; --bad-soft: #432224; --word: #b896ff; --word-soft: #302747;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-      --bg: #14161c;
-      --card: #1e2129;
-      --text: #eceef3;
-      --sub: #9aa1b2;
-      --accent: #6b9bff;
-      --accent-weak: #253150;
-      --border: #2e323d;
-      --danger: #ff6b6b;
-      color-scheme: dark;
+    --bg: #14161d; --surface: #1d2029; --surface-2: #262a35; --text: #eceef4; --sub: #a0a7b8;
+    --line: #313644; --accent: #7aa2ff; --accent-ink: #0d1530; --accent-soft: #24304f;
+    --good: #4cc790; --good-soft: #193a2c; --warn: #f0b04a; --warn-soft: #3b2e17;
+    --bad: #ff7b7b; --bad-soft: #432224; --word: #b896ff; --word-soft: #302747;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font); font-size: 16px; line-height: 1.5;
     -webkit-tap-highlight-color: transparent;
   }
-  main { max-width: 640px; margin: 0 auto; padding-block: 16px 96px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  h1 { font-size: 20px; margin: 4px 0 16px; }
-  .tabs {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    display: flex; background: var(--card); border-top: 1px solid var(--border);
-    padding-bottom: env(safe-area-inset-bottom);
+  [hidden] { display: none !important; }
+  main {
+    max-width: 640px; margin: 0 auto;
+    padding-block: 12px calc(84px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
-  .tabs button {
-    flex: 1; border: 0; background: none; color: var(--sub);
-    padding: 14px 0; font-size: 15px; font-weight: 600;
+  header.top { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; min-height: 32px; }
+  header.top h1 { font-size: 19px; margin: 0; letter-spacing: .02em; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px; border-radius: 999px;
+    padding: 2px 10px; font-size: 12px; font-weight: 600; background: var(--surface-2); color: var(--sub);
+    white-space: nowrap;
   }
-  .tabs button.active { color: var(--accent); }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.word { background: var(--word-soft); color: var(--word); }
+  .chip.sentence { background: var(--accent-soft); color: var(--accent); }
+  #sync-chip { margin-left: auto; }
+
   .view { display: none; }
-  .view.active { display: block; }
+  .view.active { display: grid; gap: 12px; }
+  h2 { font-size: 17px; margin: 0; text-wrap: balance; }
+  h3 { font-size: 15px; margin: 0; }
+  p { margin: 0; }
+  .muted { color: var(--sub); font-size: 14px; }
+  .small { font-size: 13px; }
 
-  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .seg button {
-    border: 0; background: var(--card); color: var(--sub);
-    padding: 8px 12px; font-size: 14px; font-weight: 600;
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+
+  /* タブ */
+  nav.tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    background: var(--surface); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
   }
-  .seg button.active { background: var(--accent); color: #fff; }
-  .counter { margin-left: auto; color: var(--sub); font-size: 14px; }
-
-  .card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-    padding: 28px 20px; min-height: 260px;
-    display: flex; flex-direction: column; justify-content: center; gap: 20px;
-    cursor: pointer; user-select: none;
+  nav.tabs button {
+    border: 0; background: none; color: var(--sub); font: inherit; font-size: 12px; font-weight: 700;
+    padding: 8px 0 10px; display: grid; justify-items: center; gap: 2px; min-height: 56px;
   }
-  .label { font-size: 12px; color: var(--sub); font-weight: 600; letter-spacing: .05em; }
-  .question { font-size: 22px; line-height: 1.5; word-break: break-word; }
-  .answer-box { border-top: 1px dashed var(--border); padding-top: 16px; }
-  .answer { font-size: 20px; line-height: 1.5; color: var(--accent); word-break: break-word; }
-  .hint { color: var(--sub); font-size: 14px; text-align: center; }
+  nav.tabs svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  nav.tabs button.active { color: var(--accent); }
 
+  /* ボタン */
   .btn {
-    border: 0; border-radius: 12px; padding: 14px 16px; font-size: 16px; font-weight: 600;
-    background: var(--accent); color: #fff; width: 100%;
+    border: 0; border-radius: 12px; padding: 13px 14px; font: inherit; font-size: 16px; font-weight: 700;
+    background: var(--accent); color: var(--accent-ink); min-height: 48px; cursor: pointer;
   }
-  .btn.secondary { background: var(--accent-weak); color: var(--accent); }
-  .btn.small { width: auto; padding: 8px 12px; font-size: 14px; border-radius: 10px; }
-  .btn.danger { background: none; color: var(--danger); }
-  .row { display: flex; gap: 8px; margin-top: 12px; }
-  .row .btn { flex: 1; }
+  .btn.soft { background: var(--accent-soft); color: var(--accent); }
+  .btn.plain { background: var(--surface-2); color: var(--text); }
+  .btn.good { background: var(--good); color: #fff; }
+  .btn.bad { background: var(--bad-soft); color: var(--bad); }
+  .btn.sm { min-height: 38px; padding: 7px 12px; font-size: 14px; border-radius: 10px; }
+  .btn:disabled { opacity: .45; }
+  .btn:focus-visible, nav.tabs button:focus-visible, .seg button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .row > .btn { flex: 1 1 0; }
+  .row.end { justify-content: flex-end; }
+  .row.end > .btn { flex: 0 0 auto; }
 
-  label.field { display: block; margin-bottom: 14px; }
-  label.field span { display: block; font-size: 13px; color: var(--sub); margin-bottom: 6px; font-weight: 600; }
-  textarea {
-    width: 100%; min-height: 84px; padding: 12px; font-size: 16px; font-family: inherit;
-    border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text);
-    resize: vertical;
-  }
-  textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  /* 切り替え */
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 3px; }
+  .seg button { border: 0; background: none; color: var(--sub); font: inherit; font-size: 14px; font-weight: 700; padding: 8px 4px; border-radius: 8px; min-height: 38px; }
+  .seg button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .setting-row { display: grid; grid-template-columns: 4.2em 1fr; align-items: center; gap: 8px; }
+  .setting-row > span { font-size: 13px; color: var(--sub); font-weight: 700; }
+  details.settings > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+  details.settings > summary::-webkit-details-marker { display: none; }
+  details.settings > summary .open-label { margin-left: auto; color: var(--accent); font-weight: 700; }
+  details.settings[open] > summary { margin-bottom: 4px; }
 
-  .list { list-style: none; padding: 0; margin: 20px 0 0; }
-  .list li {
-    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 14px; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;
+  /* カード */
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+    padding: 20px 18px; min-height: 240px; display: flex; flex-direction: column; gap: 16px;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
   }
-  .list .texts { flex: 1; min-width: 0; }
-  .list .en { font-weight: 600; word-break: break-word; }
-  .list .ja { color: var(--sub); font-size: 14px; margin-top: 4px; word-break: break-word; }
-  .empty { text-align: center; color: var(--sub); padding: 48px 0; line-height: 1.8; }
+  .card .meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .card .meta .count { margin-left: auto; color: var(--sub); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .card .q { font-size: 22px; line-height: 1.5; word-break: break-word; flex: 1; display: flex; align-items: center; }
+  .card .q.en, .answer .a.en, .en-text { font-family: var(--font-en); }
+  .card .hint { color: var(--sub); font-size: 14px; text-align: center; }
+  .answer { border-top: 1px dashed var(--line); padding-top: 14px; display: grid; gap: 8px; }
+  .answer .a { font-size: 20px; color: var(--accent); word-break: break-word; line-height: 1.5; }
+  .answer .extra { font-size: 14px; color: var(--sub); white-space: pre-wrap; word-break: break-word; }
+  .answer .extra b { color: var(--text); font-weight: 700; margin-right: 6px; }
+  .label { font-size: 11px; color: var(--sub); font-weight: 700; letter-spacing: .08em; }
+
+  /* フォーム */
+  label.field { display: grid; gap: 6px; }
+  label.field > span { font-size: 13px; color: var(--sub); font-weight: 700; }
+  label.field > span em { font-style: normal; font-weight: 400; }
+  textarea, input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], select {
+    width: 100%; padding: 11px 12px; font: inherit; font-size: 16px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text);
+    min-width: 0;
+  }
+  textarea { min-height: 76px; resize: vertical; }
+  textarea.code { font-family: var(--mono); font-size: 13px; line-height: 1.5; min-height: 140px; }
+  textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .notice { border-radius: 12px; padding: 12px; font-size: 14px; display: grid; gap: 8px; }
+  .notice.warn { background: var(--warn-soft); color: var(--text); }
+  .notice.bad { background: var(--bad-soft); color: var(--text); }
+  .notice.good { background: var(--good-soft); color: var(--text); }
+  .notice.info { background: var(--accent-soft); color: var(--text); }
+  .notice strong { display: block; }
+
+  /* 一覧 */
+  ul.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  ul.items li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 6px; min-width: 0; }
+  ul.items .en-text { font-weight: 700; word-break: break-word; }
+  ul.items .ja-text { color: var(--sub); font-size: 14px; word-break: break-word; }
+  ul.items .extra { color: var(--sub); font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+  ul.items .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .empty { text-align: center; color: var(--sub); padding: 36px 8px; line-height: 1.8; }
+
+  /* まとめて登録のプレビュー */
+  .prev { display: grid; gap: 8px; }
+  .prev-item { border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 8px; background: var(--surface); min-width: 0; }
+  .prev-item.off { opacity: .6; }
+  .prev-item .head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .prev-item .head input[type="checkbox"] { width: 24px; height: 24px; margin: 0; accent-color: var(--accent); }
+  .prev-item .head select { width: auto; padding: 6px 8px; font-size: 15px; }
+  .prev-item .grid2 { display: grid; gap: 6px; }
+  .prev-item input[type="text"], .prev-item textarea { padding: 8px 10px; font-size: 16px; }
+  .prev-item textarea { min-height: 42px; }
+  .prev-item label.field { gap: 2px; }
+  .prev-item label.field > span { font-size: 11px; }
+  @media (max-width: 360px) {
+    .setting-row { grid-template-columns: 1fr; gap: 4px; }
+    .seg button { font-size: 13px; padding: 8px 2px; }
+  }
+  .issues { display: flex; flex-wrap: wrap; gap: 4px; }
+  pre.sample { margin: 0; background: var(--surface-2); border-radius: 10px; padding: 10px; font-family: var(--mono); font-size: 12.5px; line-height: 1.55; overflow-x: auto; white-space: pre; }
+  .copy-box { display: grid; gap: 6px; }
+
   .toast {
-    position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%);
-    background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 999px;
-    font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none;
+    position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 999px; z-index: 20;
+    font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); text-align: center;
   }
   .toast.show { opacity: 1; }
-  .backup { margin-top: 28px; display: grid; gap: 8px; }
-  .backup h2 { font-size: 15px; margin: 0; }
-  .backup p { margin: 0; color: var(--sub); font-size: 13px; line-height: 1.6; }
-  .backup textarea { min-height: 72px; font-size: 13px; font-family: ui-monospace, monospace; }
-  .backup .row { margin-top: 0; flex-wrap: wrap; }
-  .btn:focus-visible, .tabs button:focus-visible, .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 14px; }
+  .kv dt { color: var(--sub); }
+  .kv dd { margin: 0; word-break: break-all; }
+  code.inline { font-family: var(--mono); font-size: 13px; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; word-break: break-all; }
+  @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 </style>
 </head>
 <body>
 <main>
-  <!-- 練習画面 -->
-  <section id="view-practice" class="view active">
-    <h1>センテンス暗記</h1>
-    <div class="toolbar">
-      <div class="seg" id="direction">
-        <button data-dir="ja2en" class="active">日 → 英</button>
-        <button data-dir="en2ja">英 → 日</button>
-      </div>
-      <span class="counter" id="counter"></span>
-    </div>
+  <header class="top">
+    <h1>英語暗記帳</h1>
+    <span class="chip" id="sync-chip">この端末に保存</span>
+  </header>
+
+  <div class="notice bad" id="storage-warning" hidden>
+    <strong>この画面ではデータを保存できません</strong>
+    <span>プライベートブラウズなどで保存が止められています。閉じると登録内容が消えます。</span>
+  </div>
+  <div class="notice info" id="migrated-notice" hidden>
+    <strong>前のデータを引き継ぎました</strong>
+    <span id="migrated-text"></span>
+    <div class="row end"><button class="btn sm soft" id="migrated-ok" type="button">OK</button></div>
+  </div>
+
+  <!-- 練習 -->
+  <section class="view active" id="view-practice">
+    <details class="panel settings" id="practice-settings">
+      <summary><span id="settings-summary"></span><span class="open-label">出題設定</span></summary>
+      <div class="setting-row"><span>向き</span>
+        <div class="seg" data-setting="direction">
+          <button type="button" data-value="ja2en">日 → 英</button>
+          <button type="button" data-value="en2ja">英 → 日</button>
+        </div></div>
+      <div class="setting-row"><span>対象</span>
+        <div class="seg" data-setting="target">
+          <button type="button" data-value="word">単語</button>
+          <button type="button" data-value="sentence">センテンス</button>
+          <button type="button" data-value="all">両方</button>
+        </div></div>
+      <div class="setting-row"><span>範囲</span>
+        <div class="seg" data-setting="scope">
+          <button type="button" data-value="all">全部</button>
+          <button type="button" data-value="learning">まだのもの</button>
+        </div></div>
+      <div class="setting-row"><span>順番</span>
+        <div class="seg" data-setting="order">
+          <button type="button" data-value="ordered">登録順</button>
+          <button type="button" data-value="random">ランダム</button>
+        </div></div>
+    </details>
     <div id="practice-area"></div>
   </section>
 
-  <!-- 登録画面 -->
-  <section id="view-edit" class="view">
-    <h1>センテンスを登録</h1>
-    <form id="form">
-      <label class="field">
-        <span>英語のセンテンス</span>
-        <textarea id="in-en" placeholder="例: I'm looking forward to seeing you." required></textarea>
-      </label>
-      <label class="field">
-        <span>日本語訳</span>
-        <textarea id="in-ja" placeholder="例: あなたに会えるのを楽しみにしています。" required></textarea>
-      </label>
-      <button class="btn" type="submit" id="submit-btn">保存する</button>
-      <button class="btn secondary" type="button" id="cancel-edit" style="display:none;margin-top:8px">編集をやめる</button>
-    </form>
-    <ul class="list" id="list"></ul>
-    <div class="backup">
-      <h2>バックアップ</h2>
-      <p>「書き出す」で全データが下の欄に入り、コピーされます。メモアプリなどに貼って保管してください。戻すときは欄に貼り付けて「読み込む」を押します。</p>
-      <textarea id="backup-text" placeholder='[{"en":"...","ja":"..."}]'></textarea>
-      <div class="row">
-        <button class="btn secondary small" id="export">書き出す</button>
-        <button class="btn secondary small" id="import">読み込む</button>
+  <!-- 登録 -->
+  <section class="view" id="view-add">
+    <h2 id="form-title">1件ずつ登録</h2>
+    <form class="panel" id="item-form" autocomplete="off">
+      <div class="seg" id="form-kind">
+        <button type="button" data-value="word">単語</button>
+        <button type="button" data-value="sentence" class="active">センテンス</button>
       </div>
+      <label class="field"><span>英語</span>
+        <textarea id="f-en" rows="2" required placeholder="例: I'm looking forward to seeing you."></textarea></label>
+      <label class="field"><span>日本語訳</span>
+        <textarea id="f-ja" rows="2" required placeholder="例: あなたに会えるのを楽しみにしています。"></textarea></label>
+      <label class="field"><span>例文 <em>(なくてもOK)</em></span>
+        <textarea id="f-example" rows="2" placeholder="例: I'm looking forward to the trip."></textarea></label>
+      <label class="field"><span>メモ <em>(なくてもOK)</em></span>
+        <textarea id="f-note" rows="2" placeholder="例: look forward to の後ろは -ing"></textarea></label>
+      <div class="notice warn" id="dup-warning" hidden>
+        <strong>同じ内容がすでに登録されています</strong>
+        <span id="dup-text"></span>
+        <div class="row">
+          <button type="button" class="btn sm plain" id="dup-edit">登録済みのほうを編集</button>
+          <button type="button" class="btn sm soft" id="dup-force">それでも追加する</button>
+        </div>
+      </div>
+      <button class="btn" type="submit" id="f-submit">保存する</button>
+      <button class="btn plain" type="button" id="f-cancel" hidden>編集をやめる</button>
+    </form>
+    <p class="muted small">ChatGPTでまとめた単語や英文は、下の「まとめて」からまとめて登録できます。</p>
+  </section>
+
+  <!-- まとめて登録 -->
+  <section class="view" id="view-bulk">
+    <h2>まとめて登録</h2>
+    <div class="panel" id="bulk-input-panel">
+      <p class="muted">ChatGPTにまとめてもらった内容を貼り付けて「読み取る」を押してください。登録する前に、内容を確認して選べます。</p>
+      <details>
+        <summary><b>ChatGPTへのお願い文(コピーして使う)</b></summary>
+        <div class="copy-box" style="margin-top:8px">
+          <pre class="sample" id="gpt-prompt" style="white-space:pre-wrap"></pre>
+          <div class="row end"><button type="button" class="btn sm soft" data-copy="gpt-prompt">お願い文をコピー</button></div>
+        </div>
+      </details>
+      <details>
+        <summary><b>読み取れる形式と入力例</b></summary>
+        <div class="copy-box" style="margin-top:8px">
+          <p class="muted small">JSONという形式です。<code class="inline">type</code> は単語なら <code class="inline">"word"</code>、英文なら <code class="inline">"sentence"</code>。<code class="inline">en</code>(英語)と <code class="inline">ja</code>(日本語訳)は必須、<code class="inline">example</code>(例文)と <code class="inline">note</code>(メモ)はなくてもかまいません。文の中の改行は <code class="inline">\n</code>、<code class="inline">"</code> は <code class="inline">\"</code> と書きます。</p>
+          <pre class="sample" id="bulk-sample"></pre>
+          <div class="row end">
+            <button type="button" class="btn sm plain" id="bulk-use-sample">入力欄に入れてみる</button>
+            <button type="button" class="btn sm soft" data-copy="bulk-sample">入力例をコピー</button>
+          </div>
+        </div>
+      </details>
+      <label class="field"><span>貼り付ける場所</span>
+        <textarea id="bulk-text" class="code" placeholder='{"items": [ ... ]}'></textarea></label>
+      <div class="row">
+        <button type="button" class="btn plain" id="bulk-clear">消す</button>
+        <button type="button" class="btn" id="bulk-parse">読み取る</button>
+      </div>
+    </div>
+    <div class="notice bad" id="bulk-error" hidden></div>
+    <div class="panel" id="bulk-preview-panel" hidden>
+      <div class="row" style="align-items:center">
+        <h3 style="flex:1 1 auto">内容の確認</h3>
+        <span class="chip" id="bulk-count"></span>
+      </div>
+      <p class="muted small" id="bulk-summary"></p>
+      <div class="row">
+        <button type="button" class="btn sm plain" id="bulk-select-all">全部選ぶ</button>
+        <button type="button" class="btn sm plain" id="bulk-select-none">全部はずす</button>
+      </div>
+      <div class="prev" id="bulk-preview"></div>
+      <button type="button" class="btn" id="bulk-commit">選んだものを登録</button>
+      <button type="button" class="btn plain" id="bulk-cancel">やめる</button>
+    </div>
+  </section>
+
+  <!-- 一覧 -->
+  <section class="view" id="view-list">
+    <h2>一覧</h2>
+    <input type="search" id="list-q" placeholder="英語・日本語・例文・メモで検索" aria-label="検索">
+    <div class="seg" id="list-kind">
+      <button type="button" data-value="all" class="active">すべて</button>
+      <button type="button" data-value="word">単語</button>
+      <button type="button" data-value="sentence">センテンス</button>
+    </div>
+    <div class="seg" id="list-status">
+      <button type="button" data-value="all" class="active">すべて</button>
+      <button type="button" data-value="learning">まだ</button>
+      <button type="button" data-value="learned">覚えた</button>
+    </div>
+    <p class="muted small" id="list-count"></p>
+    <ul class="items" id="list"></ul>
+  </section>
+
+  <!-- 設定 -->
+  <section class="view" id="view-settings">
+    <h2>設定とバックアップ</h2>
+
+    <div class="panel">
+      <h3>バックアップを作る</h3>
+      <p class="muted small">全データ(覚えた/まだ も含む)を文字にして書き出します。メモアプリなどに貼って保管してください。</p>
+      <div class="row">
+        <button type="button" class="btn soft" id="backup-copy">文字でコピー</button>
+        <button type="button" class="btn plain" id="backup-download">ファイルで保存</button>
+      </div>
+      <textarea id="backup-out" class="code" readonly hidden aria-label="書き出したバックアップ"></textarea>
+    </div>
+
+    <div class="panel">
+      <h3>バックアップから戻す</h3>
+      <p class="muted small">今のデータは消さずに、足りないものだけ追加します。同じ項目は新しく変更したほうを残します。</p>
+      <textarea id="restore-in" class="code" placeholder="書き出した文字を貼り付け" aria-label="バックアップの貼り付け"></textarea>
+      <div class="row">
+        <label class="btn plain" style="text-align:center">ファイルを選ぶ<input type="file" id="restore-file" accept=".json,application/json,text/plain" hidden></label>
+        <button type="button" class="btn" id="restore-run">戻す</button>
+      </div>
+    </div>
+
+    <div class="panel" id="legacy-panel" hidden>
+      <h3>引き継ぐ前のデータ</h3>
+      <p class="muted small" id="legacy-text"></p>
+      <div class="row"><button type="button" class="btn sm soft" id="legacy-copy">引き継ぐ前のデータをコピー</button></div>
+    </div>
+
+    <div class="panel" id="sync-panel">
+      <h3>スマホとMacで同じデータを使う(同期)</h3>
+      <div id="sync-area"></div>
+    </div>
+
+    <div class="panel" id="gpt-panel">
+      <h3>ChatGPTから直接登録</h3>
+      <div id="gpt-area"></div>
+    </div>
+
+    <div class="panel">
+      <h3>この端末のデータ</h3>
+      <dl class="kv" id="stats"></dl>
     </div>
   </section>
 </main>
 
-<nav class="tabs">
-  <button data-view="practice" class="active">練習</button>
-  <button data-view="edit">登録・一覧</button>
+<nav class="tabs" aria-label="画面の切り替え">
+  <button type="button" data-view="practice" class="active"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M8 12h8"/></svg>練習</button>
+  <button type="button" data-view="add"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>登録</button>
+  <button type="button" data-view="bulk"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="13" height="16" rx="2"/><path d="M8 8h5M8 12h5M20 7v14H9"/></svg>まとめて</button>
+  <button type="button" data-view="list"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>一覧</button>
+  <button type="button" data-view="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
 </nav>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<!--SCRIPTS-->
+<script src="config.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="core.js"></script>
+<script src="app.js"></script>
+<script src="sync.js"></script>
 <script>
-(function () {
-  const STORE_KEY = 'sentence-app:cards';
-  const DIR_KEY = 'sentence-app:direction';
-
-  // ---- データ保存 ----
-  function load() {
-    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch (e) { return []; }
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
   }
-  function save() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(cards)); } catch (e) { toast('保存に失敗しました'); }
-  }
-
-  let cards = load();
-  let direction = (function () { try { return localStorage.getItem(DIR_KEY) || 'ja2en'; } catch (e) { return 'ja2en'; } })();
-  let order = [];      // 出題順(カードidの配列)
-  let pos = 0;         // 今何問目か
-  let revealed = false;
-  let editingId = null;
-  let pendingDelete = null; // 削除ボタンを1回押したカード(2回目で削除)
-
-  const $ = (id) => document.getElementById(id);
-  const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-  function toast(msg) {
-    const t = $('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => t.classList.remove('show'), 1600);
-  }
-
-  // ---- 出題順 ----
-  function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
-  function resetOrder() {
-    order = shuffle(cards.map((c) => c.id));
-    pos = 0;
-    revealed = false;
-  }
-
-  // ---- 練習画面 ----
-  function renderPractice() {
-    const area = $('practice-area');
-    document.querySelectorAll('#direction button').forEach((b) =>
-      b.classList.toggle('active', b.dataset.dir === direction));
-
-    if (cards.length === 0) {
-      $('counter').textContent = '';
-      area.innerHTML = '<div class="empty">まだセンテンスがありません。<br>下の「登録・一覧」から追加してください。</div>';
-      return;
-    }
-    if (order.length !== cards.length) resetOrder();
-    const card = cards.find((c) => c.id === order[pos]);
-    if (!card) { resetOrder(); return renderPractice(); }
-
-    const ja2en = direction === 'ja2en';
-    const q = ja2en ? card.ja : card.en;
-    const a = ja2en ? card.en : card.ja;
-    $('counter').textContent = (pos + 1) + ' / ' + order.length;
-
-    area.innerHTML =
-      '<div class="card" id="card">' +
-        '<div><div class="label">' + (ja2en ? '日本語' : 'ENGLISH') + '</div>' +
-        '<div class="question">' + esc(q) + '</div></div>' +
-        (revealed
-          ? '<div class="answer-box"><div class="label">' + (ja2en ? 'ENGLISH' : '日本語') + '</div>' +
-            '<div class="answer">' + esc(a) + '</div></div>'
-          : '<div class="hint">頭の中で答えを思い浮かべたら、タップして答えを見る</div>') +
-      '</div>' +
-      '<div class="row">' +
-        '<button class="btn secondary" id="prev">← 前へ</button>' +
-        (revealed
-          ? '<button class="btn" id="next">次へ →</button>'
-          : '<button class="btn" id="reveal">答えを見る</button>') +
-      '</div>';
-
-    $('card').onclick = () => { if (!revealed) { revealed = true; renderPractice(); } else next(); };
-    $('prev').onclick = prev;
-    if (revealed) $('next').onclick = next; else $('reveal').onclick = () => { revealed = true; renderPractice(); };
-  }
-  function next() {
-    pos++;
-    if (pos >= order.length) { toast('一周しました!シャッフルしてもう一度'); resetOrder(); }
-    revealed = false;
-    renderPractice();
-  }
-  function prev() {
-    if (pos > 0) pos--;
-    revealed = false;
-    renderPractice();
-  }
-
-  document.querySelectorAll('#direction button').forEach((b) => {
-    b.onclick = () => {
-      direction = b.dataset.dir;
-      try { localStorage.setItem(DIR_KEY, direction); } catch (e) {}
-      revealed = false;
-      renderPractice();
-    };
-  });
-
-  // ---- 登録・一覧画面 ----
-  function renderList() {
-    const list = $('list');
-    if (cards.length === 0) {
-      list.innerHTML = '<div class="empty">登録したセンテンスがここに表示されます。</div>';
-      return;
-    }
-    list.innerHTML = cards.slice().reverse().map((c) =>
-      '<li><div class="texts"><div class="en">' + esc(c.en) + '</div><div class="ja">' + esc(c.ja) + '</div></div>' +
-      '<button class="btn secondary small" data-edit="' + c.id + '">編集</button>' +
-      '<button class="btn danger small" data-del="' + c.id + '">' + (pendingDelete === c.id ? '本当に削除' : '削除') + '</button></li>'
-    ).join('');
-  }
-
-  $('list').addEventListener('click', (e) => {
-    const editId = e.target.dataset.edit;
-    const delId = e.target.dataset.del;
-    if (editId) {
-      const c = cards.find((x) => x.id === editId);
-      editingId = c.id;
-      $('in-en').value = c.en;
-      $('in-ja').value = c.ja;
-      $('submit-btn').textContent = '更新する';
-      $('cancel-edit').style.display = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    if (delId) {
-      if (pendingDelete !== delId) {
-        pendingDelete = delId;
-        renderList();
-        toast('もう一度押すと削除します');
-        return;
-      }
-      pendingDelete = null;
-      cards = cards.filter((x) => x.id !== delId);
-      save();
-      resetOrder();
-      renderList();
-      if (editingId === delId) cancelEdit();
-      toast('削除しました');
-    }
-  });
-
-  function cancelEdit() {
-    editingId = null;
-    $('form').reset();
-    $('submit-btn').textContent = '保存する';
-    $('cancel-edit').style.display = 'none';
-  }
-  $('cancel-edit').onclick = cancelEdit;
-
-  $('form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const en = $('in-en').value.trim();
-    const ja = $('in-ja').value.trim();
-    if (!en || !ja) { toast('英語と日本語の両方を入力してください'); return; }
-    if (editingId) {
-      const c = cards.find((x) => x.id === editingId);
-      c.en = en; c.ja = ja;
-      toast('更新しました');
-      cancelEdit();
-    } else {
-      cards.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), en, ja, createdAt: Date.now() });
-      toast('保存しました');
-      $('form').reset();
-      $('in-en').focus();
-    }
-    save();
-    resetOrder();
-    renderList();
-  });
-
-  // ---- バックアップ ----
-  $('export').onclick = () => {
-    const box = $('backup-text');
-    box.value = JSON.stringify(cards.map((c) => ({ en: c.en, ja: c.ja })));
-    box.select();
-    const done = () => toast(cards.length + '件を書き出してコピーしました');
-    try {
-      navigator.clipboard.writeText(box.value).then(done, () => toast('書き出しました。欄の文字をコピーしてください'));
-    } catch (e) { toast('書き出しました。欄の文字をコピーしてください'); }
-  };
-  $('import').onclick = () => {
-    let data;
-    try { data = JSON.parse($('backup-text').value); } catch (e) { data = null; }
-    if (!Array.isArray(data)) { toast('欄にバックアップの文字を貼り付けてください'); return; }
-    const existing = new Set(cards.map((c) => c.en + '\n' + c.ja));
-    let added = 0;
-    data.forEach((d) => {
-      if (d && typeof d.en === 'string' && typeof d.ja === 'string' && d.en && d.ja && !existing.has(d.en + '\n' + d.ja)) {
-        cards.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), en: d.en, ja: d.ja, createdAt: Date.now() });
-        existing.add(d.en + '\n' + d.ja);
-        added++;
-      }
-    });
-    save(); resetOrder(); renderList();
-    $('backup-text').value = '';
-    toast(added + '件を読み込みました');
-  };
-
-  // ---- タブ切り替え ----
-  document.querySelectorAll('.tabs button').forEach((b) => {
-    b.onclick = () => {
-      document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('active', x === b));
-      document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + b.dataset.view));
-      if (b.dataset.view === 'practice') renderPractice(); else renderList();
-    };
-  });
-
-  renderPractice();
-  renderList();
-})();
 </script>
+<!--/SCRIPTS-->
 </body>
 </html>
