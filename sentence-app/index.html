@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2f6fed">
+<title>センテンス暗記</title>
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --text: #1d2330;
+    --sub: #6b7385;
+    --accent: #2f6fed;
+    --accent-weak: #e6eefe;
+    --border: #e1e4ec;
+    --danger: #d64545;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161c;
+      --card: #1e2129;
+      --text: #eceef3;
+      --sub: #9aa1b2;
+      --accent: #6b9bff;
+      --accent-weak: #253150;
+      --border: #2e323d;
+      --danger: #ff6b6b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 16px 16px 96px; }
+  h1 { font-size: 20px; margin: 4px 0 16px; }
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    display: flex; background: var(--card); border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabs button {
+    flex: 1; border: 0; background: none; color: var(--sub);
+    padding: 14px 0; font-size: 15px; font-weight: 600;
+  }
+  .tabs button.active { color: var(--accent); }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .seg button {
+    border: 0; background: var(--card); color: var(--sub);
+    padding: 8px 12px; font-size: 14px; font-weight: 600;
+  }
+  .seg button.active { background: var(--accent); color: #fff; }
+  .counter { margin-left: auto; color: var(--sub); font-size: 14px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px 20px; min-height: 260px;
+    display: flex; flex-direction: column; justify-content: center; gap: 20px;
+    cursor: pointer; user-select: none;
+  }
+  .label { font-size: 12px; color: var(--sub); font-weight: 600; letter-spacing: .05em; }
+  .question { font-size: 22px; line-height: 1.5; word-break: break-word; }
+  .answer-box { border-top: 1px dashed var(--border); padding-top: 16px; }
+  .answer { font-size: 20px; line-height: 1.5; color: var(--accent); word-break: break-word; }
+  .hint { color: var(--sub); font-size: 14px; text-align: center; }
+
+  .btn {
+    border: 0; border-radius: 12px; padding: 14px 16px; font-size: 16px; font-weight: 600;
+    background: var(--accent); color: #fff; width: 100%;
+  }
+  .btn.secondary { background: var(--accent-weak); color: var(--accent); }
+  .btn.small { width: auto; padding: 8px 12px; font-size: 14px; border-radius: 10px; }
+  .btn.danger { background: none; color: var(--danger); }
+  .row { display: flex; gap: 8px; margin-top: 12px; }
+  .row .btn { flex: 1; }
+
+  label.field { display: block; margin-bottom: 14px; }
+  label.field span { display: block; font-size: 13px; color: var(--sub); margin-bottom: 6px; font-weight: 600; }
+  textarea {
+    width: 100%; min-height: 84px; padding: 12px; font-size: 16px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text);
+    resize: vertical;
+  }
+  textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+  .list { list-style: none; padding: 0; margin: 20px 0 0; }
+  .list li {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;
+  }
+  .list .texts { flex: 1; min-width: 0; }
+  .list .en { font-weight: 600; word-break: break-word; }
+  .list .ja { color: var(--sub); font-size: 14px; margin-top: 4px; word-break: break-word; }
+  .empty { text-align: center; color: var(--sub); padding: 48px 0; line-height: 1.8; }
+  .toast {
+    position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%);
+    background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 999px;
+    font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .backup { margin-top: 28px; display: flex; gap: 8px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<main>
+  <!-- 練習画面 -->
+  <section id="view-practice" class="view active">
+    <h1>センテンス暗記</h1>
+    <div class="toolbar">
+      <div class="seg" id="direction">
+        <button data-dir="ja2en" class="active">日 → 英</button>
+        <button data-dir="en2ja">英 → 日</button>
+      </div>
+      <span class="counter" id="counter"></span>
+    </div>
+    <div id="practice-area"></div>
+  </section>
+
+  <!-- 登録画面 -->
+  <section id="view-edit" class="view">
+    <h1>センテンスを登録</h1>
+    <form id="form">
+      <label class="field">
+        <span>英語のセンテンス</span>
+        <textarea id="in-en" placeholder="例: I'm looking forward to seeing you." required></textarea>
+      </label>
+      <label class="field">
+        <span>日本語訳</span>
+        <textarea id="in-ja" placeholder="例: あなたに会えるのを楽しみにしています。" required></textarea>
+      </label>
+      <button class="btn" type="submit" id="submit-btn">保存する</button>
+      <button class="btn secondary" type="button" id="cancel-edit" style="display:none;margin-top:8px">編集をやめる</button>
+    </form>
+    <ul class="list" id="list"></ul>
+    <div class="backup">
+      <button class="btn secondary small" id="export">バックアップを保存</button>
+      <button class="btn secondary small" id="import">バックアップから復元</button>
+      <input type="file" id="import-file" accept="application/json" hidden>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs">
+  <button data-view="practice" class="active">練習</button>
+  <button data-view="edit">登録・一覧</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  const STORE_KEY = 'sentence-app:cards';
+  const DIR_KEY = 'sentence-app:direction';
+
+  // ---- データ保存 ----
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch (e) { return []; }
+  }
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(cards)); } catch (e) { toast('保存に失敗しました'); }
+  }
+
+  let cards = load();
+  let direction = (function () { try { return localStorage.getItem(DIR_KEY) || 'ja2en'; } catch (e) { return 'ja2en'; } })();
+  let order = [];      // 出題順(カードidの配列)
+  let pos = 0;         // 今何問目か
+  let revealed = false;
+  let editingId = null;
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.remove('show'), 1600);
+  }
+
+  // ---- 出題順 ----
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function resetOrder() {
+    order = shuffle(cards.map((c) => c.id));
+    pos = 0;
+    revealed = false;
+  }
+
+  // ---- 練習画面 ----
+  function renderPractice() {
+    const area = $('practice-area');
+    document.querySelectorAll('#direction button').forEach((b) =>
+      b.classList.toggle('active', b.dataset.dir === direction));
+
+    if (cards.length === 0) {
+      $('counter').textContent = '';
+      area.innerHTML = '<div class="empty">まだセンテンスがありません。<br>下の「登録・一覧」から追加してください。</div>';
+      return;
+    }
+    if (order.length !== cards.length) resetOrder();
+    const card = cards.find((c) => c.id === order[pos]);
+    if (!card) { resetOrder(); return renderPractice(); }
+
+    const ja2en = direction === 'ja2en';
+    const q = ja2en ? card.ja : card.en;
+    const a = ja2en ? card.en : card.ja;
+    $('counter').textContent = (pos + 1) + ' / ' + order.length;
+
+    area.innerHTML =
+      '<div class="card" id="card">' +
+        '<div><div class="label">' + (ja2en ? '日本語' : 'ENGLISH') + '</div>' +
+        '<div class="question">' + esc(q) + '</div></div>' +
+        (revealed
+          ? '<div class="answer-box"><div class="label">' + (ja2en ? 'ENGLISH' : '日本語') + '</div>' +
+            '<div class="answer">' + esc(a) + '</div></div>'
+          : '<div class="hint">頭の中で答えを思い浮かべたら、タップして答えを見る</div>') +
+      '</div>' +
+      '<div class="row">' +
+        '<button class="btn secondary" id="prev">← 前へ</button>' +
+        (revealed
+          ? '<button class="btn" id="next">次へ →</button>'
+          : '<button class="btn" id="reveal">答えを見る</button>') +
+      '</div>';
+
+    $('card').onclick = () => { if (!revealed) { revealed = true; renderPractice(); } else next(); };
+    $('prev').onclick = prev;
+    if (revealed) $('next').onclick = next; else $('reveal').onclick = () => { revealed = true; renderPractice(); };
+  }
+  function next() {
+    pos++;
+    if (pos >= order.length) { toast('一周しました!シャッフルしてもう一度'); resetOrder(); }
+    revealed = false;
+    renderPractice();
+  }
+  function prev() {
+    if (pos > 0) pos--;
+    revealed = false;
+    renderPractice();
+  }
+
+  document.querySelectorAll('#direction button').forEach((b) => {
+    b.onclick = () => {
+      direction = b.dataset.dir;
+      try { localStorage.setItem(DIR_KEY, direction); } catch (e) {}
+      revealed = false;
+      renderPractice();
+    };
+  });
+
+  // ---- 登録・一覧画面 ----
+  function renderList() {
+    const list = $('list');
+    if (cards.length === 0) {
+      list.innerHTML = '<div class="empty">登録したセンテンスがここに表示されます。</div>';
+      return;
+    }
+    list.innerHTML = cards.slice().reverse().map((c) =>
+      '<li><div class="texts"><div class="en">' + esc(c.en) + '</div><div class="ja">' + esc(c.ja) + '</div></div>' +
+      '<button class="btn secondary small" data-edit="' + c.id + '">編集</button>' +
+      '<button class="btn danger small" data-del="' + c.id + '">削除</button></li>'
+    ).join('');
+  }
+
+  $('list').addEventListener('click', (e) => {
+    const editId = e.target.dataset.edit;
+    const delId = e.target.dataset.del;
+    if (editId) {
+      const c = cards.find((x) => x.id === editId);
+      editingId = c.id;
+      $('in-en').value = c.en;
+      $('in-ja').value = c.ja;
+      $('submit-btn').textContent = '更新する';
+      $('cancel-edit').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (delId) {
+      const c = cards.find((x) => x.id === delId);
+      if (confirm('このセンテンスを削除しますか?\n\n' + c.en)) {
+        cards = cards.filter((x) => x.id !== delId);
+        save();
+        resetOrder();
+        renderList();
+        if (editingId === delId) cancelEdit();
+      }
+    }
+  });
+
+  function cancelEdit() {
+    editingId = null;
+    $('form').reset();
+    $('submit-btn').textContent = '保存する';
+    $('cancel-edit').style.display = 'none';
+  }
+  $('cancel-edit').onclick = cancelEdit;
+
+  $('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const en = $('in-en').value.trim();
+    const ja = $('in-ja').value.trim();
+    if (!en || !ja) { toast('英語と日本語の両方を入力してください'); return; }
+    if (editingId) {
+      const c = cards.find((x) => x.id === editingId);
+      c.en = en; c.ja = ja;
+      toast('更新しました');
+      cancelEdit();
+    } else {
+      cards.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), en, ja, createdAt: Date.now() });
+      toast('保存しました');
+      $('form').reset();
+      $('in-en').focus();
+    }
+    save();
+    resetOrder();
+    renderList();
+  });
+
+  // ---- バックアップ ----
+  $('export').onclick = () => {
+    const blob = new Blob([JSON.stringify(cards, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'sentences-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  $('import').onclick = () => $('import-file').click();
+  $('import-file').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then((text) => {
+      const data = JSON.parse(text);
+      if (!Array.isArray(data)) throw new Error();
+      const existing = new Set(cards.map((c) => c.en + '\n' + c.ja));
+      let added = 0;
+      data.forEach((d) => {
+        if (d && d.en && d.ja && !existing.has(d.en + '\n' + d.ja)) {
+          cards.push({ id: d.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 6), en: d.en, ja: d.ja, createdAt: d.createdAt || Date.now() });
+          added++;
+        }
+      });
+      save(); resetOrder(); renderList();
+      toast(added + '件を復元しました');
+    }).catch(() => toast('ファイルを読み込めませんでした'));
+    e.target.value = '';
+  };
+
+  // ---- タブ切り替え ----
+  document.querySelectorAll('.tabs button').forEach((b) => {
+    b.onclick = () => {
+      document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('active', x === b));
+      document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + b.dataset.view));
+      if (b.dataset.view === 'practice') renderPractice(); else renderList();
+    };
+  });
+
+  renderPractice();
+  renderList();
+})();
+</script>
+</body>
+</html>
