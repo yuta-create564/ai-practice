@@ -15,6 +15,7 @@
       --accent: #3b82f6;
       --accent-dark: #2563eb;
       --danger: #ef4444;
+      --warn: #d97706;
       --done: #9ca3af;
     }
     @media (prefers-color-scheme: dark) {
@@ -24,6 +25,7 @@
         --text: #f3f4f6;
         --sub: #9ca3af;
         --line: #374151;
+        --warn: #fbbf24;
         --done: #6b7280;
       }
     }
@@ -58,13 +60,28 @@
     /* 入力フォーム */
     form {
       display: flex;
+      flex-direction: column;
       gap: 8px;
       margin-bottom: 20px;
     }
 
-    input[type="text"] {
+    .form-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .due-label {
+      font-size: 0.9rem;
+      color: var(--sub);
+      margin-bottom: -4px;
+    }
+
+    input[type="text"],
+    input[type="date"] {
       flex: 1;
       min-width: 0;
+      min-height: 46px;
       font-size: 16px; /* iPhoneで勝手に拡大されないように16px */
       padding: 12px 14px;
       border: 1px solid var(--line);
@@ -72,7 +89,8 @@
       background: var(--card);
       color: var(--text);
     }
-    input[type="text"]:focus {
+    input[type="text"]:focus,
+    input[type="date"]:focus {
       outline: 2px solid var(--accent);
       border-color: transparent;
     }
@@ -80,6 +98,7 @@
     .add-btn {
       font-size: 16px;
       font-weight: bold;
+      min-height: 46px;
       padding: 0 20px;
       border: none;
       border-radius: 10px;
@@ -118,8 +137,15 @@
       cursor: pointer;
     }
 
-    li label {
+    .task-body {
       flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    li label {
       word-break: break-word;
       cursor: pointer;
     }
@@ -128,6 +154,15 @@
       color: var(--done);
       text-decoration: line-through;
     }
+
+    /* 締め切り日の表示 */
+    .due {
+      font-size: 0.8rem;
+      color: var(--sub);
+    }
+    .due.soon { color: var(--warn); font-weight: bold; }
+    .due.overdue { color: var(--danger); font-weight: bold; }
+    li.done .due { color: var(--done); font-weight: normal; }
 
     .delete-btn {
       flex-shrink: 0;
@@ -157,7 +192,11 @@
 
     <form id="form">
       <input type="text" id="input" placeholder="新しいタスクを入力" autocomplete="off" required>
-      <button type="submit" class="add-btn">追加</button>
+      <label class="due-label" for="due-input">締め切り日（任意・空欄でもOK）</label>
+      <div class="form-row">
+        <input type="date" id="due-input">
+        <button type="submit" class="add-btn">追加</button>
+      </div>
     </form>
 
     <ul id="list"></ul>
@@ -170,6 +209,7 @@
 
     const form = document.getElementById("form");
     const input = document.getElementById("input");
+    const dueInput = document.getElementById("due-input");
     const list = document.getElementById("list");
     const empty = document.getElementById("empty");
     const summary = document.getElementById("summary");
@@ -206,9 +246,22 @@
         checkbox.checked = task.done;
         checkbox.addEventListener("change", () => toggleTask(task.id));
 
+        const body = document.createElement("div");
+        body.className = "task-body";
+
         const label = document.createElement("label");
         label.htmlFor = checkbox.id;
         label.textContent = task.text;
+        body.appendChild(label);
+
+        // 締め切り日があるときだけ表示する
+        if (task.due) {
+          const info = dueInfo(task.due);
+          const due = document.createElement("span");
+          due.className = "due " + info.className;
+          due.textContent = info.text;
+          body.appendChild(due);
+        }
 
         const del = document.createElement("button");
         del.className = "delete-btn";
@@ -216,7 +269,7 @@
         del.setAttribute("aria-label", "「" + task.text + "」を削除");
         del.addEventListener("click", () => deleteTask(task.id));
 
-        li.append(checkbox, label, del);
+        li.append(checkbox, body, del);
         list.appendChild(li);
       });
 
@@ -228,8 +281,24 @@
         : "やることを書き留めておきましょう";
     }
 
-    function addTask(text) {
-      tasks.push({ id: Date.now(), text: text, done: false });
+    // "2026-10-25" のような文字列から、表示用の文字と色分け用のクラスを作る
+    function dueInfo(due) {
+      const [y, m, d] = due.split("-").map(Number);
+      const dueDate = new Date(y, m - 1, d);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const days = Math.round((dueDate - today) / 86400000); // 今日から何日後か
+      const week = ["日", "月", "火", "水", "木", "金", "土"][dueDate.getDay()];
+      const dateText = `${m}/${d}(${week})`;
+
+      if (days < 0) return { text: `締切 ${dateText}・期限切れ`, className: "overdue" };
+      if (days === 0) return { text: `締切 ${dateText}・今日まで`, className: "soon" };
+      if (days === 1) return { text: `締切 ${dateText}・明日まで`, className: "soon" };
+      return { text: `締切 ${dateText}・あと${days}日`, className: "" };
+    }
+
+    function addTask(text, due) {
+      tasks.push({ id: Date.now(), text: text, done: false, due: due || "" });
       saveTasks();
       render();
     }
@@ -251,8 +320,9 @@
       e.preventDefault(); // ページの再読み込みを止める
       const text = input.value.trim();
       if (!text) return;
-      addTask(text);
+      addTask(text, dueInput.value); // 日付が空なら締め切りなし
       input.value = "";
+      dueInput.value = "";
       input.focus();
     });
 
