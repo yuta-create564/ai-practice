@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToDoリスト</title>
+  <style>
+    /* 色の設定(ライト / ダーク) */
+    :root {
+      --bg: #f3f5f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --sub: #6b7280;
+      --line: #e5e7eb;
+      --accent: #3b82f6;
+      --accent-dark: #2563eb;
+      --danger: #ef4444;
+      --done: #9ca3af;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111827;
+        --card: #1f2937;
+        --text: #f3f4f6;
+        --sub: #9ca3af;
+        --line: #374151;
+        --done: #6b7280;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px 16px 48px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin: 0 0 4px;
+    }
+
+    .summary {
+      color: var(--sub);
+      font-size: 0.9rem;
+      margin: 0 0 20px;
+    }
+
+    /* 入力フォーム */
+    form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      font-size: 16px; /* iPhoneで勝手に拡大されないように16px */
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--card);
+      color: var(--text);
+    }
+    input[type="text"]:focus {
+      outline: 2px solid var(--accent);
+      border-color: transparent;
+    }
+
+    .add-btn {
+      font-size: 16px;
+      font-weight: bold;
+      padding: 0 20px;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .add-btn:hover { background: var(--accent-dark); }
+
+    /* タスク一覧 */
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 12px 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    li:last-child { border-bottom: none; }
+
+    li input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    li label {
+      flex: 1;
+      word-break: break-word;
+      cursor: pointer;
+    }
+
+    li.done label {
+      color: var(--done);
+      text-decoration: line-through;
+    }
+
+    .delete-btn {
+      flex-shrink: 0;
+      font-size: 14px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--danger);
+      cursor: pointer;
+    }
+    .delete-btn:hover { background: rgba(239, 68, 68, 0.1); }
+
+    .empty {
+      text-align: center;
+      color: var(--sub);
+      padding: 40px 16px;
+      background: var(--card);
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 ToDoリスト</h1>
+    <p class="summary" id="summary"></p>
+
+    <form id="form">
+      <input type="text" id="input" placeholder="新しいタスクを入力" autocomplete="off" required>
+      <button type="submit" class="add-btn">追加</button>
+    </form>
+
+    <ul id="list"></ul>
+    <p class="empty" id="empty">タスクはまだありません。<br>上の入力欄から追加してみましょう。</p>
+  </div>
+
+  <script>
+    // タスクはブラウザの中(localStorage)に保存します。ページを閉じても消えません。
+    const STORAGE_KEY = "todo-list-tasks";
+
+    const form = document.getElementById("form");
+    const input = document.getElementById("input");
+    const list = document.getElementById("list");
+    const empty = document.getElementById("empty");
+    const summary = document.getElementById("summary");
+
+    let tasks = loadTasks();
+
+    function loadTasks() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveTasks() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      } catch (e) {
+        // 保存できない環境(プライベートモードなど)でも画面は動くようにする
+      }
+    }
+
+    // 画面を作り直す
+    function render() {
+      list.innerHTML = "";
+
+      tasks.forEach((task) => {
+        const li = document.createElement("li");
+        if (task.done) li.classList.add("done");
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = "task-" + task.id;
+        checkbox.checked = task.done;
+        checkbox.addEventListener("change", () => toggleTask(task.id));
+
+        const label = document.createElement("label");
+        label.htmlFor = checkbox.id;
+        label.textContent = task.text;
+
+        const del = document.createElement("button");
+        del.className = "delete-btn";
+        del.textContent = "削除";
+        del.setAttribute("aria-label", "「" + task.text + "」を削除");
+        del.addEventListener("click", () => deleteTask(task.id));
+
+        li.append(checkbox, label, del);
+        list.appendChild(li);
+      });
+
+      const doneCount = tasks.filter((t) => t.done).length;
+      list.style.display = tasks.length ? "block" : "none";
+      empty.style.display = tasks.length ? "none" : "block";
+      summary.textContent = tasks.length
+        ? `全${tasks.length}件 / 完了${doneCount}件`
+        : "やることを書き留めておきましょう";
+    }
+
+    function addTask(text) {
+      tasks.push({ id: Date.now(), text: text, done: false });
+      saveTasks();
+      render();
+    }
+
+    function toggleTask(id) {
+      const task = tasks.find((t) => t.id === id);
+      if (task) task.done = !task.done;
+      saveTasks();
+      render();
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter((t) => t.id !== id);
+      saveTasks();
+      render();
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault(); // ページの再読み込みを止める
+      const text = input.value.trim();
+      if (!text) return;
+      addTask(text);
+      input.value = "";
+      input.focus();
+    });
+
+    render();
+  </script>
+</body>
+</html>
