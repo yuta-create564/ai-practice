@@ -1,0 +1,10 @@
+{
+  "name": "eigo-anki",
+  "private": true,
+  "description": "自分専用の英単語・英文の暗記アプリ",
+  "scripts": {
+    "test": "node --test tests/core.test.js && node --test --test-concurrency=1 tests/e2e.test.mjs",
+    "test:db": "sh tests/sql/run.sh && sh tests/sql/concurrent.sh && node --experimental-strip-types --test tests/edge.test.mjs",
+    "build:artifact": "node tools/build-artifact.mjs dist/artifact.html"
+  }
+}
